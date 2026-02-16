@@ -22,7 +22,6 @@ export default [
     prefix("tutor", [
       index("./routes/tutor/index.tsx"),
       route("login", "./routes/tutor/login.tsx"),
-      route("register", "./routes/tutor/register.tsx"),
       route("dashboard", "./routes/tutor/dashboard.tsx"),
     ])
   ),

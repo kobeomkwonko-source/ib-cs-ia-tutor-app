@@ -92,9 +92,6 @@ export default function StudentRegisterRoute() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Register as student</h1>
-        <p className="text-sm text-gray-700">
-          Create a student account to complete tasks and earn points.
-        </p>
       </div>
 
       <Card className="border">

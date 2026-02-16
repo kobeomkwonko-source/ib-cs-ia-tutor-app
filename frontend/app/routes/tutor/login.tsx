@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router"
+import { useNavigate } from "react-router"
 
 import { Button } from "~/components/ui/button"
 import {
@@ -61,7 +61,7 @@ export default function TutorLoginRoute() {
       if (data.role !== "tutor") {
         setFormState((prev) => ({
           ...prev,
-          error: "This portal is for teachers. Please log in as a teacher.",
+          error: "wrong information",
           isSubmitting: false,
         }))
         return
@@ -83,9 +83,6 @@ export default function TutorLoginRoute() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Teacher login</h1>
-        <p className="text-sm text-gray-700">
-          Sign in to manage homework for your students.
-        </p>
       </div>
 
       <Card className="w-full border">
@@ -132,12 +129,6 @@ export default function TutorLoginRoute() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="text-sm">
-          <span className="text-gray-700">Need an account?</span>
-          <Button asChild variant="link" className="px-2">
-            <Link to="/tutor/register">Register as teacher</Link>
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   )

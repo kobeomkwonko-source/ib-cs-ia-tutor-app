@@ -23,6 +23,11 @@ class Config:
     JWT_COOKIE_NAME = "access_token"
     JWT_COOKIE_SECURE = os.getenv("JWT_COOKIE_SECURE", "false").lower() == "true"
     JWT_COOKIE_SAMESITE = os.getenv("JWT_COOKIE_SAMESITE", "Lax")
+    REFRESH_TOKEN_SECRET = os.getenv("REFRESH_TOKEN_SECRET", "dev-refresh-secret-change-me")
+    REFRESH_TOKEN_EXPIRES_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRES_DAYS", "7"))
+    REFRESH_COOKIE_NAME = "refresh_token"
+    REFRESH_COOKIE_SECURE = os.getenv("REFRESH_COOKIE_SECURE", "false").lower() == "true"
+    REFRESH_COOKIE_SAMESITE = os.getenv("REFRESH_COOKIE_SAMESITE", "Lax")
 
     CORS_ORIGINS = ["http://127.0.0.1:5173"]
 

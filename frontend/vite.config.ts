@@ -7,5 +7,10 @@ export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
   server: {
     host: "127.0.0.1",
+    allowedHosts: [
+      'localhost',
+      '192.168.0.123',
+      '.trycloudflare.com', // wildcard
+    ],
   },
 });

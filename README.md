@@ -97,6 +97,63 @@ Open `http://127.0.0.1:5173`.
 - File uploads are stored in `uploads/` (auto-created) unless `UPLOAD_FOLDER` is set.
 - Reminder emails use SMTP settings configured via environment variables.
 
+## Cloudflare Tunnel (Setup Record)
+
+Use this section to document how you exposed the local dev server for testing/demo.
+
+### Summary
+
+- Purpose: expose local frontend/backend for remote testing or IA demo.
+- Date: YYYY-MM-DD
+- Tunnel hostname: `your-subdomain.trycloudflare.com` (or your custom domain)
+- Local services: `http://127.0.0.1:5173` (frontend), `http://127.0.0.1:5001` (backend)
+
+### Steps (Example)
+
+```bash
+# 1) Install cloudflared (macOS example)
+brew install cloudflared
+
+# 2) Login to Cloudflare
+cloudflared tunnel login
+
+# 3) Create a named tunnel
+cloudflared tunnel create tutor-app
+
+# 4) Run a quick temporary tunnel (frontend)
+cloudflared tunnel --url http://127.0.0.1:5173
+
+# 5) Or run with a config file (multi-service)
+# config file path example: ~/.cloudflared/config.yml
+cloudflared tunnel run tutor-app
+```
+
+### Notes
+
+- If using a config file, record the path and the exact `ingress` mapping used.
+- If you used a custom domain, note the DNS records created by Cloudflare.
+- If the tunnel was temporary (`--url`), record the full temporary URL and date.
+
+## Why Flask Instead of Django (Rationale Guide)
+
+If you need to justify the framework choice in your IA documentation, here is a concise structure you can adapt.
+
+### Key Points to Address
+
+- Project scope: small-to-medium CRUD app with a simple API; no need for Django's built-in admin/ORM complexity.
+- Time constraints: Flask has a lighter learning curve and faster initial setup for a focused IA timeline.
+- Flexibility: Flask lets you choose only the libraries you need (JWT auth, MySQL, file uploads).
+- Architecture fit: separate React frontend + API backend; Flask suits a minimal REST API.
+- Deployment simplicity: fewer moving parts and lower resource requirements.
+
+### Example Paragraph
+
+Use a short paragraph like the following and tweak to match your actual decision:
+
+```
+I chose Flask instead of Django because the project required a lightweight REST API and a separate React frontend. Flask’s minimal structure allowed faster setup and clearer control over routing, authentication, and database access within the limited IA timeframe. Django’s built-in admin and ORM features are powerful, but they would add complexity that this project does not need. Flask therefore provided a better fit for the project scope, learning objectives, and deployment simplicity.
+```
+
 ## Useful Commands
 
 Backend:

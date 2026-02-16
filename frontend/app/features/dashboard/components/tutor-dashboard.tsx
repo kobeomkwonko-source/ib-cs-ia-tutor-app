@@ -25,7 +25,6 @@ type TaskDraft = {
   description: string
   deadline: string
   points: string
-  difficulty: "easy" | "medium" | "hard"
   assignedStudentIds: number[]
 }
 
@@ -36,21 +35,28 @@ type StudentOption = {
 }
 
 export function TutorDashboard({ user }: Props) {
+  const normalizeDescription = (description: string | null | undefined) => {
+    if (description == null) {
+      return ""
+    }
+    return description.trim().length === 0 ? "" : description
+  }
+
   const [tasks, setTasks] = useState<Task[]>([])
   const [taskDraft, setTaskDraft] = useState<TaskDraft>({
     title: "",
     description: "",
     deadline: "",
     points: "",
-    difficulty: "medium",
     assignedStudentIds: [],
   })
+  const [taskDraftFile, setTaskDraftFile] = useState<File | null>(null)
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
   const [editingDraft, setEditingDraft] = useState<TaskDraft | null>(null)
   const [submissions, setSubmissions] = useState<Record<number, Submission[]>>({})
-  const [awardDrafts, setAwardDrafts] = useState<
-    Record<string, { points: string; comment: string }>
-  >({})
+  const [awardDrafts, setAwardDrafts] = useState<Record<string, { comment: string }>>(
+    {}
+  )
   const [hiddenSubmissionGroups, setHiddenSubmissionGroups] = useState<
     Record<string, boolean>
   >({})
@@ -62,7 +68,7 @@ export function TutorDashboard({ user }: Props) {
   const [rewards, setRewards] = useState<Reward[]>([])
   const [rewardPurchases, setRewardPurchases] = useState<Purchase[]>([])
   const [rewardEdits, setRewardEdits] = useState<
-    Record<number, { title: string; description: string; cost: string; active: boolean }>
+    Record<number, { title: string; description: string; cost: string }>
   >({})
   const [students, setStudents] = useState<StudentOption[]>([])
   const [studentOverview, setStudentOverview] = useState<StudentOverview[]>([])
@@ -158,23 +164,25 @@ export function TutorDashboard({ user }: Props) {
     setStatusMessage(null)
 
     try {
-      const { data } = await api.post("/tasks", {
-        title: taskDraft.title,
-        description: taskDraft.description,
-        deadline: taskDraft.deadline || null,
-        points: Number(taskDraft.points),
-        difficulty: taskDraft.difficulty,
-        assignedStudentIds: taskDraft.assignedStudentIds,
-      })
+      const formData = new FormData()
+      formData.append("title", taskDraft.title)
+      formData.append("description", taskDraft.description)
+      formData.append("deadline", taskDraft.deadline || "")
+      formData.append("points", taskDraft.points)
+      formData.append("assignedStudentIds", JSON.stringify(taskDraft.assignedStudentIds))
+      if (taskDraftFile) {
+        formData.append("pdf", taskDraftFile)
+      }
+      const { data } = await api.post("/tasks", formData)
       setStatusMessage(data.message || "Task created.")
       setTaskDraft({
         title: "",
         description: "",
         deadline: "",
         points: "",
-        difficulty: "medium",
         assignedStudentIds: [],
       })
+      setTaskDraftFile(null)
       fetchTasks()
       fetchStudentOverview()
     } catch (error) {
@@ -192,7 +200,6 @@ export function TutorDashboard({ user }: Props) {
       description: task.description || "",
       deadline: toDatetimeLocal(task.deadline),
       points: String(task.points),
-      difficulty: task.difficulty,
       assignedStudentIds,
     })
   }
@@ -206,7 +213,6 @@ export function TutorDashboard({ user }: Props) {
         description: editingDraft.description,
         deadline: editingDraft.deadline || null,
         points: Number(editingDraft.points),
-        difficulty: editingDraft.difficulty,
         assignedStudentIds: editingDraft.assignedStudentIds,
       })
       setStatusMessage(data.message || "Task updated.")
@@ -259,17 +265,11 @@ export function TutorDashboard({ user }: Props) {
     }
   }
 
-  const handleAwardDraftChange = (
-    groupKey: string,
-    field: "points" | "comment",
-    value: string
-  ) => {
+  const handleAwardDraftChange = (groupKey: string, value: string) => {
     setAwardDrafts((prev) => ({
       ...prev,
       [groupKey]: {
-        points: prev[groupKey]?.points ?? "",
-        comment: prev[groupKey]?.comment ?? "",
-        [field]: value,
+        comment: value,
       },
     }))
   }
@@ -515,24 +515,15 @@ export function TutorDashboard({ user }: Props) {
                   required
                 />
               </div>
-              <div className="space-y-1 text-left">
-                <Label htmlFor="difficulty">Difficulty</Label>
-                <select
-                  id="difficulty"
-                  className="w-full rounded border px-3 py-2 text-sm"
-                  value={taskDraft.difficulty}
-                  onChange={(e) =>
-                    setTaskDraft((prev) => ({
-                      ...prev,
-                      difficulty: e.target.value as TaskDraft["difficulty"],
-                    }))
-                  }
-                >
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
+            </div>
+            <div className="space-y-1 text-left">
+              <Label htmlFor="task-pdf">Homework PDF (optional)</Label>
+              <Input
+                id="task-pdf"
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setTaskDraftFile(e.target.files?.[0] ?? null)}
+              />
             </div>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Creating..." : "Create task"}
@@ -558,9 +549,17 @@ export function TutorDashboard({ user }: Props) {
                       <p className="font-semibold">{task.title}</p>
                       <p className="text-sm text-gray-700">{task.description}</p>
                       <p className="text-xs text-gray-600">
-                        Points: {task.points} · Difficulty: {task.difficulty}
+                        Points: {task.points}
                       </p>
                       <p className="text-xs text-gray-600">Deadline: {formatDeadline(task.deadline)}</p>
+                      {task.pdf_path ? (
+                        <a
+                          className="text-xs text-blue-600 underline"
+                          href={`${API_BASE_URL}/tasks/${task.id}/file`}
+                        >
+                          Download homework PDF
+                        </a>
+                      ) : null}
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={() => handleEditTask(task)}>
@@ -610,24 +609,6 @@ export function TutorDashboard({ user }: Props) {
                             )
                           }
                         />
-                        <select
-                          className="w-full rounded border px-3 py-2 text-sm"
-                          value={editingDraft.difficulty}
-                          onChange={(e) =>
-                            setEditingDraft((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    difficulty: e.target.value as TaskDraft["difficulty"],
-                                  }
-                                : prev
-                            )
-                          }
-                        >
-                          <option value="easy">Easy</option>
-                          <option value="medium">Medium</option>
-                          <option value="hard">Hard</option>
-                        </select>
                       </div>
                       <div className="space-y-2 text-left">
                         <div className="flex items-center justify-between gap-2">
@@ -767,9 +748,9 @@ export function TutorDashboard({ user }: Props) {
                           if (hiddenSubmissionGroups[group.key]) return null
                           const latest = group.submissions[0]
                           const draft = awardDrafts[group.key] || {
-                            points: latest.awarded_points?.toString() || "",
                             comment: latest.teacher_comment || "",
                           }
+                          const maxPoints = latest.max_points ?? 0
 
                           return (
                             <div key={group.key} className="rounded border p-2 space-y-2">
@@ -814,19 +795,14 @@ export function TutorDashboard({ user }: Props) {
                                 ))}
                               </div>
                               <div className="space-y-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Adjust points"
-                                  value={draft.points}
-                                  onChange={(e) =>
-                                    handleAwardDraftChange(group.key, "points", e.target.value)
-                                  }
-                                />
+                                <p className="text-xs text-gray-600">
+                                  Awardable points after late penalty: {maxPoints}
+                                </p>
                                 <Input
                                   placeholder="Teacher comment"
                                   value={draft.comment}
                                   onChange={(e) =>
-                                    handleAwardDraftChange(group.key, "comment", e.target.value)
+                                    handleAwardDraftChange(group.key, e.target.value)
                                   }
                                 />
                                 <div className="flex gap-2">
@@ -835,12 +811,25 @@ export function TutorDashboard({ user }: Props) {
                                       handleAward(
                                         task.id,
                                         group.studentId,
-                                        Number(draft.points || 0),
+                                        Number(maxPoints || 0),
                                         draft.comment
                                       )
                                     }
                                   >
-                                    Save award
+                                    Give {maxPoints} points
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() =>
+                                      handleAward(
+                                        task.id,
+                                        group.studentId,
+                                        0,
+                                        draft.comment
+                                      )
+                                    }
+                                  >
+                                    No points
                                   </Button>
                                   <Button
                                     variant="outline"
@@ -1026,10 +1015,10 @@ export function TutorDashboard({ user }: Props) {
               rewards.map((reward) => {
                 const edit = rewardEdits[reward.id] || {
                   title: reward.title,
-                  description: reward.description || "",
+                  description: normalizeDescription(reward.description),
                   cost: String(reward.cost),
-                  active: Boolean(reward.active),
                 }
+                const descriptionValue = normalizeDescription(edit.description)
 
                 return (
                   <div key={reward.id} className="rounded border p-2 text-left space-y-2">
@@ -1043,7 +1032,8 @@ export function TutorDashboard({ user }: Props) {
                       }
                     />
                     <Input
-                      value={edit.description}
+                      value={descriptionValue}
+                      placeholder={descriptionValue.length === 0 ? "No description" : undefined}
                       onChange={(e) =>
                         setRewardEdits((prev) => ({
                           ...prev,
@@ -1067,25 +1057,12 @@ export function TutorDashboard({ user }: Props) {
                         onClick={() =>
                           handleUpdateReward(reward, {
                             title: edit.title,
-                            description: edit.description,
+                            description: normalizeDescription(edit.description),
                             cost: Number(edit.cost),
                           })
                         }
                       >
                         Save
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const nextActive = !edit.active
-                          setRewardEdits((prev) => ({
-                            ...prev,
-                            [reward.id]: { ...edit, active: nextActive },
-                          }))
-                          handleUpdateReward(reward, { active: nextActive ? 1 : 0 })
-                        }}
-                      >
-                        {edit.active ? "Deactivate" : "Activate"}
                       </Button>
                       <Button
                         variant="destructive"

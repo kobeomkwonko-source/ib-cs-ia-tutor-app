@@ -32,6 +32,11 @@ type DeadlineMeta = {
   isPast: boolean
 }
 
+function getRewardDescription(description: string | null | undefined) {
+  const normalized = (description ?? "").trim()
+  return normalized.length > 0 ? normalized : "No description"
+}
+
 function parseKstDate(deadline: string) {
   const normalized = deadline.includes("T") ? deadline : deadline.replace(" ", "T")
   return new Date(`${normalized}+09:00`)
@@ -84,16 +89,6 @@ function getDeadlineMeta(deadline: string | null | undefined): DeadlineMeta {
   }
 }
 
-function getDifficultyClass(difficulty?: string | null) {
-  const normalized = (difficulty || "").toLowerCase()
-  if (normalized === "easy") return "bg-emerald-100 text-emerald-700 border border-emerald-200"
-  if (normalized === "medium") return "bg-amber-100 text-amber-700 border border-amber-200"
-  if (normalized === "hard" || normalized === "difficult") {
-    return "bg-red-100 text-red-700 border border-red-200"
-  }
-  return "bg-gray-100 text-gray-600 border border-gray-200"
-}
-
 function getTierClass(tier?: string | null) {
   const normalized = (tier || "").toLowerCase()
   if (normalized === "iron") return "bg-stone-200 text-stone-700 border border-stone-300"
@@ -120,9 +115,11 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
   const [drafts, setDrafts] = useState<Record<number, SubmissionDraft>>({})
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [submissionMessage, setSubmissionMessage] = useState<string | null>(null)
   const [rewardStatusMessage, setRewardStatusMessage] = useState<string | null>(null)
   const [loadingTasks, setLoadingTasks] = useState(true)
   const [submittingTaskId, setSubmittingTaskId] = useState<number | null>(null)
+  const [deletingSubmissionId, setDeletingSubmissionId] = useState<number | null>(null)
 
   const fetchTasks = useCallback(async () => {
     setLoadingTasks(true)
@@ -216,7 +213,7 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
 
   const handleSubmitTask = async (taskId: number) => {
     setSubmittingTaskId(taskId)
-    setStatusMessage(null)
+    setSubmissionMessage(null)
 
     const draft = drafts[taskId] || { textContent: "", file: null }
     const formData = new FormData()
@@ -228,16 +225,32 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
       const { data } = await api.post("/submissions", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
-      setStatusMessage(data.message || "Submission completed.")
+      setSubmissionMessage(data.message || "Submission completed.")
       setDrafts((prev) => ({
         ...prev,
         [taskId]: { textContent: "", file: null },
       }))
       await Promise.all([fetchTasks(), fetchLeaderboard(), fetchSubmissions(taskId), refreshUserPoints()])
     } catch (error) {
-      setStatusMessage(getApiErrorMessage(error, "Submission failed."))
+      setSubmissionMessage(getApiErrorMessage(error, "Submission failed."))
     } finally {
       setSubmittingTaskId(null)
+    }
+  }
+
+  const handleDeleteSubmission = async (taskId: number, submissionId: number) => {
+    const confirmed = window.confirm("Delete this submission?")
+    if (!confirmed) return
+    setSubmissionMessage(null)
+    setDeletingSubmissionId(submissionId)
+    try {
+      const { data } = await api.delete(`/submissions/${submissionId}`)
+      setSubmissionMessage(data.message || "Submission deleted.")
+      await Promise.all([fetchSubmissions(taskId), fetchTasks(), fetchLeaderboard(), refreshUserPoints()])
+    } catch (error) {
+      setSubmissionMessage(getApiErrorMessage(error, "Failed to delete submission."))
+    } finally {
+      setDeletingSubmissionId(null)
     }
   }
 
@@ -298,6 +311,10 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
     fetchSubmissions(selectedTaskId)
   }, [fetchSubmissions, selectedTaskId, submissionStatus])
 
+  useEffect(() => {
+    setSubmissionMessage(null)
+  }, [selectedTaskId])
+
   return (
     <div className="space-y-4">
       <Card className="border">
@@ -319,7 +336,6 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                   <ul className="space-y-3">
                     {tasks.filter((task) => !task.is_done).map((task) => {
                       const deadlineMeta = getDeadlineMeta(task.deadline)
-                      const difficultyClass = getDifficultyClass(task.difficulty)
                       const deadlineTextClass = deadlineMeta.isPast
                         ? "text-red-700"
                         : "text-gray-600"
@@ -348,11 +364,6 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs">
                               <span className="text-gray-600">Points: {task.points}</span>
-                              <span
-                                className={`rounded-full px-2 py-0.5 font-semibold ${difficultyClass}`}
-                              >
-                                {task.difficulty || "Unknown"}
-                              </span>
                               <span className={deadlineTextClass}>
                                 Deadline (KST): {formatDeadline(task.deadline)}
                               </span>
@@ -379,7 +390,6 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                   <ul className="space-y-3">
                     {tasks.filter((task) => task.is_done).map((task) => {
                       const deadlineMeta = getDeadlineMeta(task.deadline)
-                      const difficultyClass = getDifficultyClass(task.difficulty)
                       const submittedMeta = {
                         label: "Submitted",
                         className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
@@ -408,11 +418,6 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs">
                               <span className="text-gray-600">Points: {task.points}</span>
-                              <span
-                                className={`rounded-full px-2 py-0.5 font-semibold ${difficultyClass}`}
-                              >
-                                {task.difficulty || "Unknown"}
-                              </span>
                               <span className={deadlineTextClass}>
                                 Deadline (KST): {formatDeadline(task.deadline)}
                               </span>
@@ -483,7 +488,7 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                   <li key={reward.id} className="rounded border p-3 text-left">
                     <p className="font-semibold">{reward.title}</p>
                     <p className="text-sm text-gray-700">
-                      {reward.description || "No description."}
+                      {getRewardDescription(reward.description)}
                     </p>
                     <p className="text-xs text-gray-600">Cost: {reward.cost} points</p>
                     <Button
@@ -531,14 +536,22 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
       </Card>
 
       {selectedTask ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4 py-6">
-          <div className="w-full max-w-2xl rounded-lg border bg-white shadow-lg">
+        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border bg-white shadow-lg">
             <div className="flex items-start justify-between border-b px-4 py-3">
               <div>
                 <p className="text-lg font-semibold">{selectedTask.title}</p>
                 <p className="text-sm text-gray-600">
                   Deadline (KST): {formatDeadline(selectedTask.deadline)}
                 </p>
+                {selectedTask.pdf_path ? (
+                  <a
+                    className="mt-1 inline-block text-xs text-blue-600 underline"
+                    href={`${API_BASE_URL}/tasks/${selectedTask.id}/file`}
+                  >
+                    Download homework PDF
+                  </a>
+                ) : null}
                 {latestTeacherComment ? (
                   <p className="mt-1 text-sm text-gray-700">
                     Teacher comment: {latestTeacherComment}
@@ -575,9 +588,6 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                     {selectedDeadlineMeta.label}
                   </span>
                 ) : null}
-                <span className={`rounded-full px-2 py-0.5 font-semibold ${getDifficultyClass(selectedTask.difficulty)}`}>
-                  {selectedTask.difficulty || "Unknown"}
-                </span>
                 <span className="text-gray-600">Points: {selectedTask.points}</span>
                 <span className="text-gray-600">Countdown: {getCountdown(selectedTask.deadline)}</span>
               </div>
@@ -607,6 +617,9 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                 >
                   {submittingTaskId === selectedTask.id ? "Submitting..." : "Submit"}
                 </Button>
+                {submissionMessage ? (
+                  <p className="text-xs text-gray-700">{submissionMessage}</p>
+                ) : null}
               </div>
 
               <div className="space-y-2">
@@ -638,6 +651,23 @@ export function StudentDashboard({ user, onPointsUpdate }: Props) {
                             Max points after penalty: {submission.max_points} · Days late:{" "}
                             {submission.days_late}
                           </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={
+                                submission.awarded_points !== null ||
+                                deletingSubmissionId === submission.id
+                              }
+                              onClick={() => handleDeleteSubmission(selectedTask.id, submission.id)}
+                            >
+                              {deletingSubmissionId === submission.id ? "Deleting..." : "Delete"}
+                            </Button>
+                            {submission.awarded_points !== null ? (
+                              <span className="text-gray-500">Graded submissions cannot be deleted.</span>
+                            ) : null}
+                          </div>
                           {submission.teacher_comment ? (
                             <p className="text-xs text-gray-700">
                               Teacher comment: {submission.teacher_comment}

@@ -11,7 +11,6 @@ export default function TutorLayout() {
           <nav className="flex items-center gap-2 text-sm">
             <NavButton to="/tutor/dashboard">Dashboard</NavButton>
             <NavButton to="/tutor/login">Teacher Login</NavButton>
-            <NavButton to="/tutor/register">Teacher Register</NavButton>
           </nav>
         </div>
       </header>

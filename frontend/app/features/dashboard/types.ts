@@ -4,7 +4,7 @@ export type Task = {
   description: string | null
   deadline: string | null
   points: number
-  difficulty: "easy" | "medium" | "hard"
+  pdf_path: string | null
   is_done?: boolean
 }
 
@@ -37,7 +37,6 @@ export type Reward = {
   title: string
   description: string | null
   cost: number
-  active?: number
 }
 
 export type Purchase = {

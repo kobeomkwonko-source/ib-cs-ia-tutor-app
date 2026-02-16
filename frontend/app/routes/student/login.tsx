@@ -6,8 +6,6 @@ import {
   Card,
   CardContent,
   CardFooter,
-  CardHeader,
-  CardTitle,
 } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
@@ -61,7 +59,7 @@ export default function StudentLoginRoute() {
       if (data.role !== "student") {
         setFormState((prev) => ({
           ...prev,
-          error: "Please use a student account for this login.",
+          error: "wrong information",
           isSubmitting: false,
         }))
         return
@@ -83,9 +81,6 @@ export default function StudentLoginRoute() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Student login</h1>
-        <p className="text-sm text-gray-700">
-          Use the student demo credentials or your own student account.
-        </p>
       </div>
 
       <Card className="w-full border">
@@ -120,9 +115,9 @@ export default function StudentLoginRoute() {
                 required
               />
             </div>
-          {formState.error ? (
-            <p className="text-sm text-red-600">{formState.error}</p>
-          ) : null}
+            {formState.error ? (
+              <p className="text-sm text-red-600">{formState.error}</p>
+            ) : null}
             <Button
               className="w-full sm:w-auto"
               type="submit"
@@ -138,16 +133,6 @@ export default function StudentLoginRoute() {
             <Link to="/student/register">Register</Link>
           </Button>
         </CardFooter>
-      </Card>
-
-      <Card className="border">
-        <CardHeader>
-          <CardTitle className="text-base">Demo credentials</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-left text-sm">
-          <p>Teacher – username: tutor1 / password: 1234</p>
-          <p>Student – username: student1 / password: 1234</p>
-        </CardContent>
       </Card>
     </div>
   )
