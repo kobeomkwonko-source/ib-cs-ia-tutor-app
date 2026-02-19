@@ -1,60 +1,48 @@
 # ib-cs-ia-tutor-app
 
-This is my IB Computer Science IA Project.
-IB Computer Science IA project: a tutor/student homework system with a Flask + MySQL backend and a React Router (Vite) frontend.
+This is my IB CS IA project.
+its basically a tutor/student homework app.
 
-## Project Structure
+stack is Flask + MySQL for backend and React (Vite) for frontend.
 
-```bash
+## folder structure (rough)
+
+```txt
 .
-├── backend/                           # Flask backend
-│   ├── app.py                         # Backend entrypoint
+├── backend/
+│   ├── app.py
 │   ├── scripts/
-│   │   └── send_reminders.py          # Email reminder script
+│   │   └── send_reminders.py
 │   └── server/
-│       ├── __init__.py                # Flask app factory
-│       ├── config.py                  # Env/config values
-│       ├── db.py                      # DB connection helpers
-│       ├── extensions.py              # Flask extensions setup
-│       ├── models.py                  # Data-access/model layer
-│       ├── routes/                    # API route blueprints
-│       │   ├── auth.py
-│       │   ├── shop.py
-│       │   ├── students.py
-│       │   └── tasks.py
-│       ├── services/                  # Business logic/services
-│       └── utils/                     # Auth + file utilities
-├── frontend/                          # React Router + Vite frontend
+│       ├── routes/      # auth, tasks, students, shop
+│       ├── services/    # logic for users/tasks/submissions etc
+│       ├── utils/       # auth + file stuff
+│       ├── db.py
+│       ├── models.py
+│       └── config.py
+├── frontend/
 │   ├── app/
-│   │   ├── components/ui/             # Shared UI components
-│   │   ├── features/                  # Feature modules (auth/dashboard)
-│   │   ├── lib/                       # API/session/util helpers
-│   │   └── routes/                    # App routes (home, tutor, student)
-│   ├── public/
+│   │   ├── routes/
+│   │   ├── components/
+│   │   ├── features/
+│   │   └── lib/
 │   ├── package.json
 │   └── vite.config.ts
-├── schema.sql                         # MySQL schema / migration SQL
-├── uploads/                           # Uploaded files (runtime)
-└── README.md
+├── schema.sql
+└── uploads/
 ```
 
-## Tech Stack
+## what tech i used
 
-- Backend: Flask, Flask-CORS, Flask-Bcrypt, PyMySQL, PyJWT
-- Frontend: React Router (Vite), React, TypeScript, Tailwind CSS
-- Database: MySQL
+- Flask
+- MySQL (pymysql)
+- JWT auth
+- React + TypeScript + Vite
+- Tailwind (for UI)
 
-## Getting Started
+## how to run
 
-### Prerequisites
-
-- Node.js (18+ recommended)
-- Python 3.10+ (compatible with your environment)
-- MySQL server (local or remote)
-
-### 1) Backend Setup
-
-Create and activate a virtual environment, then install dependencies:
+### backend
 
 ```bash
 cd backend
@@ -63,7 +51,7 @@ source .venv/bin/activate
 pip install flask flask-cors flask-bcrypt pymysql pyjwt python-dotenv
 ```
 
-Set environment variables (defaults shown are used if not set):
+set env vars (or put in your shell profile):
 
 ```bash
 export DB_HOST=127.0.0.1
@@ -83,27 +71,23 @@ export SMTP_PASSWORD=
 export SMTP_SENDER=
 ```
 
-Initialize the database:
+make db + run sql:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS tutor_app;"
 mysql -u root -p tutor_app < schema.sql
 ```
 
-Note: `schema.sql` contains migration-style updates and expects existing `users` and `tasks` tables. If you are starting from scratch, create those base tables first or adjust the SQL accordingly.
-
-Run the backend (port `5001`):
+run backend:
 
 ```bash
 cd backend
 python app.py
 ```
 
-You should see: `Backend is running` at `http://127.0.0.1:5001/`.
+backend runs on `http://127.0.0.1:5001`.
 
-### 2) Frontend Setup
-
-Install dependencies and run the dev server (port `5173`):
+### frontend
 
 ```bash
 cd frontend
@@ -111,91 +95,17 @@ npm install
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`.
+frontend is `http://127.0.0.1:5173`
 
-## Environment Notes
+## notes
 
-- CORS allows `http://127.0.0.1:5173` by default (`backend/server/config.py`).
-- File uploads are stored in `uploads/` (auto-created) unless `UPLOAD_FOLDER` is set.
-- Reminder emails use SMTP settings configured via environment variables.
+- uploads go to `uploads/` unless changed by env var
+- cors default is 127.0.0.1:5173
+- reminder email thing uses smtp vars above
 
-## Cloudflare Tunnel (Setup Record)
+## common problems
 
-Use this section to document how you exposed the local dev server for testing/demo.
+- DB error: check mysql is running + env vars
+- CORS error: make sure frontend url matches backend config
+- upload error: check uploads folder permissions
 
-### Summary
-
-- Purpose: expose local frontend/backend for remote testing or IA demo.
-- Date: YYYY-MM-DD
-- Tunnel hostname: `your-subdomain.trycloudflare.com` (or your custom domain)
-- Local services: `http://127.0.0.1:5173` (frontend), `http://127.0.0.1:5001` (backend)
-
-### Steps (Example)
-
-```bash
-# 1) Install cloudflared (macOS example)
-brew install cloudflared
-
-# 2) Login to Cloudflare
-cloudflared tunnel login
-
-# 3) Create a named tunnel
-cloudflared tunnel create tutor-app
-
-# 4) Run a quick temporary tunnel (frontend)
-cloudflared tunnel --url http://127.0.0.1:5173
-
-# 5) Or run with a config file (multi-service)
-# config file path example: ~/.cloudflared/config.yml
-cloudflared tunnel run tutor-app
-```
-
-### Notes
-
-- If using a config file, record the path and the exact `ingress` mapping used.
-- If you used a custom domain, note the DNS records created by Cloudflare.
-- If the tunnel was temporary (`--url`), record the full temporary URL and date.
-
-## Why Flask Instead of Django (Rationale Guide)
-
-If you need to justify the framework choice in your IA documentation, here is a concise structure you can adapt.
-
-### Key Points to Address
-
-- Project scope: small-to-medium CRUD app with a simple API; no need for Django's built-in admin/ORM complexity.
-- Time constraints: Flask has a lighter learning curve and faster initial setup for a focused IA timeline.
-- Flexibility: Flask lets you choose only the libraries you need (JWT auth, MySQL, file uploads).
-- Architecture fit: separate React frontend + API backend; Flask suits a minimal REST API.
-- Deployment simplicity: fewer moving parts and lower resource requirements.
-
-### Example Paragraph
-
-Use a short paragraph like the following and tweak to match your actual decision:
-
-```
-I chose Flask instead of Django because the project required a lightweight REST API and a separate React frontend. Flask’s minimal structure allowed faster setup and clearer control over routing, authentication, and database access within the limited IA timeframe. Django’s built-in admin and ORM features are powerful, but they would add complexity that this project does not need. Flask therefore provided a better fit for the project scope, learning objectives, and deployment simplicity.
-```
-
-## Useful Commands
-
-Backend:
-
-```bash
-cd backend
-python app.py
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm run dev
-npm run build
-npm run start
-```
-
-## Troubleshooting
-
-- DB connection errors: verify MySQL credentials in env vars and that `tutor_app` exists.
-- CORS errors: ensure frontend is running on `http://127.0.0.1:5173` or update `CORS_ORIGINS`.
-- Upload issues: confirm the `uploads/` directory is writable or set `UPLOAD_FOLDER`.
