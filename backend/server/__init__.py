@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
+import pymysql
 
 from .config import Config
 from .extensions import bcrypt
@@ -35,5 +36,9 @@ def create_app():
     @app.get("/")
     def index():
         return "Backend is running"
+
+    @app.errorhandler(pymysql.MySQLError)
+    def handle_mysql_error(_):
+        return {"success": False, "message": "Database is unavailable."}, 503
 
     return app

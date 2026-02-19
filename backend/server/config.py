@@ -1,18 +1,27 @@
 import os
+from dotenv import load_dotenv
+
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+BACKEND_DIR = os.path.join(BASE_DIR, "backend")
+
+# Load local env files if present.
+load_dotenv(os.path.join(BACKEND_DIR, ".env"), override=False)
+load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 
 
 def _resolve_upload_folder():
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     upload_env = os.getenv("UPLOAD_FOLDER")
     if upload_env:
         if os.path.isabs(upload_env):
             return upload_env
-        return os.path.abspath(os.path.join(base_dir, upload_env))
-    return os.path.join(base_dir, "uploads")
+        return os.path.abspath(os.path.join(BASE_DIR, upload_env))
+    return os.path.join(BASE_DIR, "uploads")
 
 
 class Config:
     DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+    DB_PORT = int(os.getenv("DB_PORT", "3306"))
     DB_USER = os.getenv("DB_USER", "root")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "12345678")
     DB_NAME = os.getenv("DB_NAME", "tutor_app")

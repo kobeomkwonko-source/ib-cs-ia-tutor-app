@@ -5,15 +5,37 @@ IB Computer Science IA project: a tutor/student homework system with a Flask + M
 
 ## Project Structure
 
-```
+```bash
 .
-├── backend/                 # Flask API, DB schema, reminder script
-│   ├── app.py               # App entrypoint
-│   ├── schema.sql           # DB schema updates/migrations
-│   ├── server/              # Flask app package
-│   └── scripts/             # Background/utility scripts
-├── frontend/                # React Router (Vite) app
-└── uploads/                 # Uploaded files (created at runtime)
+├── backend/                           # Flask backend
+│   ├── app.py                         # Backend entrypoint
+│   ├── scripts/
+│   │   └── send_reminders.py          # Email reminder script
+│   └── server/
+│       ├── __init__.py                # Flask app factory
+│       ├── config.py                  # Env/config values
+│       ├── db.py                      # DB connection helpers
+│       ├── extensions.py              # Flask extensions setup
+│       ├── models.py                  # Data-access/model layer
+│       ├── routes/                    # API route blueprints
+│       │   ├── auth.py
+│       │   ├── shop.py
+│       │   ├── students.py
+│       │   └── tasks.py
+│       ├── services/                  # Business logic/services
+│       └── utils/                     # Auth + file utilities
+├── frontend/                          # React Router + Vite frontend
+│   ├── app/
+│   │   ├── components/ui/             # Shared UI components
+│   │   ├── features/                  # Feature modules (auth/dashboard)
+│   │   ├── lib/                       # API/session/util helpers
+│   │   └── routes/                    # App routes (home, tutor, student)
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.ts
+├── schema.sql                         # MySQL schema / migration SQL
+├── uploads/                           # Uploaded files (runtime)
+└── README.md
 ```
 
 ## Tech Stack
@@ -65,10 +87,10 @@ Initialize the database:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS tutor_app;"
-mysql -u root -p tutor_app < backend/schema.sql
+mysql -u root -p tutor_app < schema.sql
 ```
 
-Note: `backend/schema.sql` contains migration-style updates and expects existing `users` and `tasks` tables. If you are starting from scratch, create those base tables first or adjust the SQL accordingly.
+Note: `schema.sql` contains migration-style updates and expects existing `users` and `tasks` tables. If you are starting from scratch, create those base tables first or adjust the SQL accordingly.
 
 Run the backend (port `5001`):
 
